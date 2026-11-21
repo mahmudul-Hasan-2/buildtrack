@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/permissions";
 import { Topbar } from "@/components/shared/topbar";
-import { SidebarNav } from "@/components/dashboard/dashboard-nav";
+import { SidebarNav } from "@/components/shared/dashboard-nav";
 
 export default async function DashboardLayout({
   children,

@@ -88,6 +88,9 @@ export default async function TasksPage({
           <h1 className="text-2xl font-bold text-[#0B192C]">Tasks</h1>
           <p className="text-sm text-slate-500">{total} task(s)</p>
         </div>
+        <Button asChild variant="outline">
+          <Link href="/tasks/board">Board view</Link>
+        </Button>
         {(user.role === "ADMIN" || user.role === "PROJECT_MANAGER") && (
           <Button
             asChild

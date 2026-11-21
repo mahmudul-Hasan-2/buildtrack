@@ -8,12 +8,14 @@ import {
   LayoutDashboard,
   FolderKanban,
   ListChecks,
+  ClipboardList,
   Wallet,
   Receipt,
   Boxes,
   Users,
   BarChart3,
   UserCog,
+  History,
   Settings,
   Menu,
 } from "lucide-react";
@@ -54,6 +56,12 @@ const NAV: {
     roles: ["ADMIN", "PROJECT_MANAGER", "SITE_ENGINEER", "CONTRACTOR"],
   },
   {
+    href: "/progress",
+    label: "Progress",
+    icon: ClipboardList,
+    roles: ["ADMIN", "PROJECT_MANAGER", "SITE_ENGINEER", "CONTRACTOR"],
+  },
+  {
     href: "/budget",
     label: "Budget",
     icon: Wallet,
@@ -84,6 +92,7 @@ const NAV: {
     roles: ["ADMIN", "PROJECT_MANAGER", "FINANCE_MANAGER"],
   },
   { href: "/users", label: "Users", icon: UserCog, roles: ["ADMIN"] },
+  { href: "/activity", label: "Activity Log", icon: History, roles: ["ADMIN"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ALL },
 ];
 
