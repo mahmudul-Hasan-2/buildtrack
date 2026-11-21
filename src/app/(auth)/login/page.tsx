@@ -1,9 +1,16 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { HardHat, Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import {
+  HardHat,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { loginAction } from "@/actions/auth";
 import type { AuthActionState } from "@/types/auth";
 import { Button } from "@/components/ui/button";
@@ -21,12 +28,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const initialState: AuthActionState = {};
 
+const DEMO_PASSWORD = "Password123!";
+const DEMO_ACCOUNTS = [
+  { label: "Admin", email: "admin@buildtrack.com" },
+  { label: "Project Manager", email: "pm@buildtrack.com" },
+  { label: "Site Engineer", email: "engineer@buildtrack.com" },
+  { label: "Finance Manager", email: "finance@buildtrack.com" },
+  { label: "Contractor", email: "contractor@buildtrack.com" },
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     loginAction,
     initialState,
   );
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (state.redirectTo) {
@@ -71,28 +90,46 @@ export default function LoginPage() {
               id="email"
               name="email"
               type="email"
-              placeholder="engineer@buildtrack.io"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isPending}
+              autoComplete="email"
               className="focus-visible:ring-orange-500"
             />
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-slate-700 font-medium">
-                Password
-              </Label>
+            <Label htmlFor="password" className="text-slate-700 font-medium">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isPending}
+                autoComplete="current-password"
+                className="pr-10 focus-visible:ring-orange-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              disabled={isPending}
-              className="focus-visible:ring-orange-500"
-            />
           </div>
 
           <Button
@@ -113,11 +150,34 @@ export default function LoginPage() {
             )}
           </Button>
         </form>
+
+        {/* Demo accounts: remove this block before real production use */}
+        <div className="mt-6 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Demo accounts (click to fill)
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {DEMO_ACCOUNTS.map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  setEmail(a.email);
+                  setPassword(DEMO_PASSWORD);
+                }}
+                className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:border-orange-400 hover:text-orange-600 disabled:opacity-50"
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </CardContent>
 
       <CardFooter className="flex flex-col space-y-4 border-t border-slate-100 pt-6">
         <p className="text-sm text-center text-slate-600">
-          New to BuildTrack?{" "}
+          New contractor?{" "}
           <Link
             href="/register"
             className="font-semibold text-orange-600 hover:text-orange-500 underline-offset-4 hover:underline"

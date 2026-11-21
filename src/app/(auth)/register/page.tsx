@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HardHat, Loader2, AlertCircle, UserPlus } from "lucide-react";
@@ -21,12 +21,65 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const initialState: AuthActionState = {};
 
+type FieldName = "name" | "companyName" | "email" | "phone" | "password";
+
+const FIELDS: {
+  name: FieldName;
+  label: string;
+  type: string;
+  placeholder: string;
+  autoComplete: string;
+}[] = [
+  {
+    name: "name",
+    label: "Full Name",
+    type: "text",
+    placeholder: "Alex Mercer",
+    autoComplete: "name",
+  },
+  {
+    name: "companyName",
+    label: "Company Name",
+    type: "text",
+    placeholder: "Apex Builders Ltd.",
+    autoComplete: "organization",
+  },
+  {
+    name: "email",
+    label: "Work Email",
+    type: "email",
+    placeholder: "alex@apexbuilders.com",
+    autoComplete: "email",
+  },
+  {
+    name: "phone",
+    label: "Phone",
+    type: "tel",
+    placeholder: "+8801XXXXXXXXX",
+    autoComplete: "tel",
+  },
+  {
+    name: "password",
+    label: "Password",
+    type: "password",
+    placeholder: "Minimum 8 characters",
+    autoComplete: "new-password",
+  },
+];
+
 export default function RegisterPage() {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     registerAction,
     initialState,
   );
+  const [values, setValues] = useState<Record<FieldName, string>>({
+    name: "",
+    companyName: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
 
   useEffect(() => {
     if (state.redirectTo) {
@@ -50,7 +103,7 @@ export default function RegisterPage() {
           Create your account
         </CardTitle>
         <CardDescription className="text-slate-500">
-          Register as a contractor to access BuildTrack
+          Register your company as a contractor on BuildTrack
         </CardDescription>
       </CardHeader>
 
@@ -63,51 +116,28 @@ export default function RegisterPage() {
             </Alert>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-slate-700 font-medium">
-              Full Name
-            </Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Alex Mercer"
-              required
-              disabled={isPending}
-              className="focus-visible:ring-orange-500"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-700 font-medium">
-              Work Email
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="alex.mercer@apexbuilders.com"
-              required
-              disabled={isPending}
-              className="focus-visible:ring-orange-500"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-slate-700 font-medium">
-              Password
-            </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Minimum 8 characters"
-              minLength={8}
-              required
-              disabled={isPending}
-              className="focus-visible:ring-orange-500"
-            />
-          </div>
+          {FIELDS.map((f) => (
+            <div key={f.name} className="space-y-2">
+              <Label htmlFor={f.name} className="text-slate-700 font-medium">
+                {f.label}
+              </Label>
+              <Input
+                id={f.name}
+                name={f.name}
+                type={f.type}
+                placeholder={f.placeholder}
+                autoComplete={f.autoComplete}
+                value={values[f.name]}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, [f.name]: e.target.value }))
+                }
+                minLength={f.name === "password" ? 8 : undefined}
+                required
+                disabled={isPending}
+                className="focus-visible:ring-orange-500"
+              />
+            </div>
+          ))}
 
           <p className="text-xs text-slate-500">
             Public sign-up creates a Contractor account. Other roles are

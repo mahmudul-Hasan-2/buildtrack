@@ -18,6 +18,11 @@ export async function projectScope(
         where: { userId: user.id },
         select: { id: true },
       });
+      console.log("CONTRACTOR DEBUG", {
+        userId: user.id,
+        email: user.email,
+        contractorId: c?.id,
+      });
       return { contractors: { some: { contractorId: c?.id ?? "none" } } };
     }
     default:

@@ -12,8 +12,10 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name is too short"),
+  name: z.string().trim().min(2, "Name is too short"),
+  companyName: z.string().trim().min(2, "Company name is required"),
   email: z.string().email("Enter a valid email"),
+  phone: z.string().trim().min(6, "Enter a valid phone number"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -54,32 +56,48 @@ export async function registerAction(
 ): Promise<AuthActionState> {
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
+    companyName: formData.get("companyName"),
     email: formData.get("email"),
+    phone: formData.get("phone"),
     password: formData.get("password"),
   });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const { name, password } = parsed.data;
+  const { name, companyName, phone, password } = parsed.data;
   const email = parsed.data.email.toLowerCase();
 
-  const exists =
-    (await prisma.user.findUnique({ where: { email } })) ||
-    (await prisma.contractor.findUnique({ where: { email } }));
-  if (exists) return { error: "This email is already registered" };
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) return { error: "This email is already registered" };
+
+  // An orphan profile (its user was deleted) can be re-linked.
+  // A profile that still belongs to a user blocks the email.
+  const orphan = await prisma.contractor.findUnique({ where: { email } });
+  if (orphan && orphan.userId) {
+    return { error: "This email is already registered" };
+  }
 
   try {
     // Role is NEVER read from the form. Public sign-up is always CONTRACTOR.
     const res = await auth.api.signUpEmail({ body: { name, email, password } });
 
-    await prisma.contractor.create({
-      data: {
-        userId: res.user.id,
-        companyName: `${name} (Independent)`,
-        contactName: name,
-        email,
-        phone: "-",
-      },
-    });
+    await prisma.user.update({ where: { id: res.user.id }, data: { phone } });
+
+    if (orphan) {
+      await prisma.contractor.update({
+        where: { id: orphan.id },
+        data: { userId: res.user.id, companyName, contactName: name, phone },
+      });
+    } else {
+      await prisma.contractor.create({
+        data: {
+          userId: res.user.id,
+          companyName,
+          contactName: name,
+          email,
+          phone,
+        },
+      });
+    }
     return { redirectTo: "/dashboard" };
   } catch {
     return { error: "Could not create the account. Please try again." };

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { Plus } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
@@ -72,18 +73,22 @@ export default async function ProjectsPage({
     prisma.project.count({ where }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Only Admin and Project Manager can create projects (also enforced in the server action)
   const canCreate = user.role === "ADMIN" || user.role === "PROJECT_MANAGER";
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#0B192C]">Projects</h1>
           <p className="text-sm text-slate-500">{total} project(s)</p>
         </div>
         {canCreate && (
-          <Button asChild className="bg-orange-500 hover:bg-orange-600">
-            <Link href="/projects/new">New Project</Link>
+          <Button className="bg-orange-500 hover:bg-orange-600">
+            <Link href="/projects/new" className="flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Link>
           </Button>
         )}
       </div>
@@ -107,11 +112,17 @@ export default async function ProjectsPage({
           <TableBody>
             {projects.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-10 text-center text-slate-500"
-                >
-                  No projects found.
+                <TableCell colSpan={6} className="py-10 text-center">
+                  <p className="text-slate-500">No projects found.</p>
+                  {canCreate && (
+                    <Button
+                      asChild
+                      size="sm"
+                      className="mt-3 bg-orange-500 hover:bg-orange-600"
+                    >
+                      <Link href="/projects/new">Create project</Link>
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )}
