@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  SITE_ENGINEER
+  FINANCE_MANAGER
+  CONTRACTOR
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ContractorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+}
+
+enum StockType {
+  STOCK_IN
+  ISSUED
+  CONSUMED
+  ADJUSTMENT
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  role          Role     @default(CONTRACTOR)
+  phone         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  managedProjects  Project[]         @relation("ProjectManager")
+  assignedTasks    Task[]            @relation("TaskAssignee")
+  comments         TaskComment[]
+  taskHistory      TaskHistory[]
+  expenses         Expense[]
+  progressReports  ProgressReport[]
+  materialRequests MaterialRequest[]
+  stockHistory     StockHistory[]
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+  contractor       Contractor?
+}
+
+model Contractor {
+  id          String           @id @default(cuid())
+  userId      String?          @unique
+  user        User?            @relation(fields: [userId], references: [id])
+  companyName String
+  contactName String
+  email       String           @unique
+  phone       String
+  address     String?
+  status      ContractorStatus @default(ACTIVE)
+  rating      Float            @default(0)
+  createdAt   DateTime         @default(now())
+
+  projects ProjectContractor[]
+  tasks    Task[]
+  requests MaterialRequest[]
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  name            String
+  description     String
+  location        String
+  startDate       DateTime
+  expectedEndDate DateTime
+  totalBudget     Decimal       @db.Decimal(14, 2)
+  status          ProjectStatus @default(PLANNING)
+  progress        Int           @default(0)
+  managerId       String
+  manager         User          @relation("ProjectManager", fields: [managerId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  contractors      ProjectContractor[]
+  tasks            Task[]
+  milestones       Milestone[]
+  expenses         Expense[]
+  progressReports  ProgressReport[]
+  materialRequests MaterialRequest[]
+
+  @@index([status])
+  @@index([managerId])
+}
+
+model ProjectContractor {
+  projectId    String
+  contractorId String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contractor   Contractor @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  assignedAt   DateTime   @default(now())
+
+  @@id([projectId, contractorId])
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  dueDate     DateTime
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+}
+
+model Task {
+  id           String      @id @default(cuid())
+  projectId    String
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  status       TaskStatus  @default(TODO)
+  priority     Priority    @default(MEDIUM)
+  progress     Int         @default(0)
+  deadline     DateTime
+  assigneeId   String?
+  assignee     User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  contractorId String?
+  contractor   Contractor? @relation(fields: [contractorId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  dependsOn       TaskDependency[] @relation("DependentTask")
+  blocks          TaskDependency[] @relation("DependencyTask")
+  comments        TaskComment[]
+  history         TaskHistory[]
+  progressReports ProgressReport[]
+
+  @@index([projectId, status])
+  @@index([deadline])
+}
+
+model TaskDependency {
+  taskId          String
+  dependsOnTaskId String
+  task            Task   @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTask   Task   @relation("DependencyTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, dependsOnTaskId])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model TaskHistory {
+  id         String      @id @default(cuid())
+  taskId     String
+  task       Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  action     String
+  fromStatus TaskStatus?
+  toStatus   TaskStatus?
+  createdAt  DateTime    @default(now())
+}
+
+model ExpenseCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  expenses Expense[]
+}
+
+model Expense {
+  id           String          @id @default(cuid())
+  title        String
+  projectId    String
+  project      Project         @relation(fields: [projectId], references: [id])
+  categoryId   String
+  category     ExpenseCategory @relation(fields: [categoryId], references: [id])
+  amount       Decimal         @db.Decimal(14, 2)
+  date         DateTime
+  description  String?
+  documentUrl  String?
+  recordedById String
+  recordedBy   User            @relation(fields: [recordedById], references: [id])
+  createdAt    DateTime        @default(now())
+
+  @@index([projectId])
+  @@index([date])
+}
+
+model MaterialCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  materials Material[]
+}
+
+model Material {
+  id                String           @id @default(cuid())
+  name              String
+  sku               String           @unique
+  categoryId        String
+  category          MaterialCategory @relation(fields: [categoryId], references: [id])
+  unit              String
+  availableQuantity Float            @default(0)
+  lowStockThreshold Float            @default(10)
+  unitPrice         Decimal          @db.Decimal(12, 2)
+  createdAt         DateTime         @default(now())
+
+  requests MaterialRequest[]
+  history  StockHistory[]
+}
+
+model MaterialRequest {
+  id            String        @id @default(cuid())
+  materialId    String
+  material      Material      @relation(fields: [materialId], references: [id])
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id])
+  contractorId  String?
+  contractor    Contractor?   @relation(fields: [contractorId], references: [id])
+  requestedById String
+  requestedBy   User          @relation(fields: [requestedById], references: [id])
+  quantity      Float
+  status        RequestStatus @default(PENDING)
+  note          String?
+  createdAt     DateTime      @default(now())
+}
+
+model StockHistory {
+  id           String    @id @default(cuid())
+  materialId   String
+  material     Material  @relation(fields: [materialId], references: [id])
+  projectId    String?
+  type         StockType
+  quantity     Float
+  balanceAfter Float
+  note         String?
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  createdAt    DateTime  @default(now())
+
+  @@index([materialId])
+}
+
+model ProgressReport {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId       String?
+  task         Task?    @relation(fields: [taskId], references: [id])
+  progress     Int
+  description  String
+  photos       String[]
+  reportedById String
+  reportedBy   User     @relation(fields: [reportedById], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+}
