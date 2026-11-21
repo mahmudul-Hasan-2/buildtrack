@@ -12,6 +12,7 @@ import { hashPassword } from "better-auth/crypto";
 
 const prisma = new PrismaClient();
 const PASSWORD = "Password123!";
+const DAY = 86400000;
 
 const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
@@ -241,23 +242,58 @@ async function main() {
   ];
   const priorities: Priority[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
+  const projectNames = [
+    "Skyline Tower",
+    "Riverside Mall",
+    "Harbor Bridge",
+    "Green Valley Apartments",
+    "City General Hospital",
+    "Lakeview School",
+    "Central Metro Station",
+    "Sunrise Business Park",
+    "Eastgate Warehouse",
+    "Grand Plaza Hotel",
+  ];
+  const cities = [
+    "Dhaka",
+    "Chattogram",
+    "Sylhet",
+    "Khulna",
+    "Rajshahi",
+    "Barishal",
+    "Cumilla",
+    "Gazipur",
+    "Narayanganj",
+    "Rangpur",
+  ];
+
   const projects = [];
+  const allTasks: { id: string; projectId: string }[] = [];
+
   for (let p = 0; p < 10; p++) {
     const start = faker.date.past({ years: 1 });
     const end = new Date(
-      start.getTime() + faker.number.int({ min: 120, max: 400 }) * 86400000,
+      start.getTime() + faker.number.int({ min: 120, max: 400 }) * DAY,
     );
+    const pStatus = statuses[p % statuses.length];
+
     const project = await prisma.project.create({
       data: {
-        name: `${faker.location.city()} ${pick(["Tower", "Mall", "Bridge", "Apartment Complex", "Hospital", "School"])}`,
+        name: projectNames[p],
         description: faker.lorem.sentences(2),
-        location: `${faker.location.streetAddress()}, ${faker.location.city()}`,
+        location: `${faker.location.streetAddress()}, ${cities[p]}`,
         startDate: start,
         expectedEndDate: end,
         totalBudget: faker.number.int({ min: 500000, max: 5000000 }),
-        status: statuses[p % statuses.length],
-        progress: faker.number.int({ min: 5, max: 95 }),
-        managerId: pick(extraPMs).id,
+        status: pStatus,
+        progress:
+          pStatus === "COMPLETED"
+            ? 100
+            : pStatus === "PLANNING"
+              ? faker.number.int({ min: 0, max: 10 })
+              : faker.number.int({ min: 10, max: 90 }),
+        // round-robin: pm@buildtrack.com always gets projects 0, 3, 6, 9
+        managerId: extraPMs[p % extraPMs.length].id,
       },
     });
     projects.push(project);
@@ -289,19 +325,26 @@ async function main() {
         dueDate: new Date(
           start.getTime() + ((i + 1) * (end.getTime() - start.getTime())) / 3,
         ),
-        completed: i === 0,
-        completedAt: i === 0 ? new Date() : null,
+        completed: pStatus === "COMPLETED" ? true : i === 0,
+        completedAt: pStatus === "COMPLETED" || i === 0 ? new Date() : null,
       })),
     });
 
     // 10 tasks per project
     const createdTasks = [];
     for (let t = 0; t < 10; t++) {
-      const status = pick(taskStatuses);
+      // tasks of a COMPLETED project are all completed
+      const status: TaskStatus =
+        pStatus === "COMPLETED"
+          ? "COMPLETED"
+          : pStatus === "PLANNING"
+            ? "TODO"
+            : pick(taskStatuses);
+
       const task = await prisma.task.create({
         data: {
           projectId: project.id,
-          title: `${taskTitles[t % taskTitles.length]} - ${project.name.split(" ")[0]}`,
+          title: `${taskTitles[t % taskTitles.length]} - ${project.name}`,
           description: faker.lorem.sentence(),
           status,
           priority: pick(priorities),
@@ -312,15 +355,17 @@ async function main() {
                 ? 0
                 : faker.number.int({ min: 10, max: 90 }),
           deadline: faker.date.between({
-            from: new Date(Date.now() - 30 * 86400000),
-            to: new Date(Date.now() + 90 * 86400000),
+            from: new Date(Date.now() - 30 * DAY),
+            to: new Date(Date.now() + 90 * DAY),
           }),
           assigneeId: pick(engineers).id,
           contractorId: pick(assigned).id,
         },
       });
       createdTasks.push(task);
+      allTasks.push({ id: task.id, projectId: project.id });
 
+      // history: created, then the path to the current status
       await prisma.taskHistory.create({
         data: {
           taskId: task.id,
@@ -329,6 +374,20 @@ async function main() {
           toStatus: "TODO",
         },
       });
+      const path: TaskStatus[] = ["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"];
+      const reached = path.slice(0, path.indexOf(status) + 1);
+      for (let h = 1; h < reached.length; h++) {
+        await prisma.taskHistory.create({
+          data: {
+            taskId: task.id,
+            userId: pick(engineers).id,
+            action: "Status changed",
+            fromStatus: reached[h - 1],
+            toStatus: reached[h],
+            createdAt: new Date(Date.now() - (reached.length - h) * DAY),
+          },
+        });
+      }
 
       // dependency: depends on the previous task (never on itself)
       if (t > 0 && Math.random() < 0.4) {
@@ -353,6 +412,18 @@ async function main() {
     }
   }
 
+  // ---------- Task comments (40) ----------
+  const commenters = [pm, ...engineers];
+  for (let c = 0; c < 40; c++) {
+    await prisma.taskComment.create({
+      data: {
+        taskId: pick(allTasks).id,
+        userId: pick(commenters).id,
+        content: faker.lorem.sentence(),
+      },
+    });
+  }
+
   // ---------- Expenses (60) ----------
   for (let e = 0; e < 60; e++) {
     await prisma.expense.create({
@@ -368,7 +439,7 @@ async function main() {
     });
   }
 
-  // ---------- Material requests + stock history ----------
+  // ---------- Stock history ----------
   for (const m of materials) {
     await prisma.stockHistory.create({
       data: {
@@ -381,6 +452,8 @@ async function main() {
       },
     });
   }
+
+  // ---------- Material requests (20) ----------
   for (let i = 0; i < 20; i++) {
     const project = pick(projects);
     await prisma.materialRequest.create({
@@ -396,14 +469,36 @@ async function main() {
     });
   }
 
-  // ---------- Notification ----------
-  await prisma.notification.create({
-    data: {
-      userId: pm.id,
-      title: "Welcome",
-      message: "BuildTrack seed data loaded.",
-    },
-  });
+  // ---------- Notifications ----------
+  const notifyUsers = [admin, pm, engineer, finance, contractorUser];
+  for (const u of notifyUsers) {
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: u.id,
+          title: "Welcome to BuildTrack",
+          message: "Your workspace is ready.",
+        },
+        {
+          userId: u.id,
+          title: "Seed data loaded",
+          message: "Demo projects, tasks and expenses are available.",
+        },
+      ],
+    });
+  }
+
+  // ---------- Activity logs ----------
+  for (const project of projects) {
+    await prisma.activityLog.create({
+      data: {
+        userId: admin.id,
+        action: "CREATE",
+        entity: "Project",
+        entityId: project.id,
+      },
+    });
+  }
 
   console.log("Seed complete!");
   console.log("Demo login (password for all accounts): " + PASSWORD);
