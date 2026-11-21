@@ -1,0 +1,130 @@
+"use client";
+
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { HardHat, Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { loginAction, type AuthActionState } from "@/actions/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const initialState: AuthActionState = {};
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [state, formAction, isPending] = useActionState(
+    loginAction,
+    initialState,
+  );
+
+  useEffect(() => {
+    if (state.redirectTo) {
+      router.push(state.redirectTo);
+      router.refresh();
+    }
+  }, [state.redirectTo, router]);
+
+  return (
+    <Card className="border-slate-200/80 shadow-xl bg-white">
+      <CardHeader className="space-y-2 pb-6">
+        <div className="flex lg:hidden items-center gap-2 mb-2">
+          <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center">
+            <HardHat className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-bold text-[#0B192C]">
+            Build<span className="text-orange-500">Track</span>
+          </span>
+        </div>
+        <CardTitle className="text-2xl font-bold text-[#0B192C]">
+          Welcome back
+        </CardTitle>
+        <CardDescription className="text-slate-500">
+          Sign in to access your project command center
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <form action={formAction} className="space-y-4">
+          {state.error && (
+            <Alert variant="destructive" className="bg-red-50 border-red-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-slate-700 font-medium">
+              Work Email
+            </Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="engineer@buildtrack.io"
+              required
+              disabled={isPending}
+              className="focus-visible:ring-orange-500"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-slate-700 font-medium">
+                Password
+              </Label>
+            </div>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              required
+              disabled={isPending}
+              className="focus-visible:ring-orange-500"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="w-full bg-[#0B192C] hover:bg-[#152842] text-white font-semibold h-11 transition-all group"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin text-orange-500" />
+                Authenticating...
+              </>
+            ) : (
+              <>
+                Sign In to Workspace
+                <ArrowRight className="ml-2 h-4 w-4 text-orange-500 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+
+      <CardFooter className="flex flex-col space-y-4 border-t border-slate-100 pt-6">
+        <p className="text-sm text-center text-slate-600">
+          New to BuildTrack?{" "}
+          <Link
+            href="/register"
+            className="font-semibold text-orange-600 hover:text-orange-500 underline-offset-4 hover:underline"
+          >
+            Create an account
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
+}
