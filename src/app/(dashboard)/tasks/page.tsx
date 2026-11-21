@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@base-ui/react";
+import { Plus } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
@@ -81,9 +83,22 @@ export default async function TasksPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-[#0B192C]">Tasks</h1>
-        <p className="text-sm text-slate-500">{total} task(s)</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#0B192C]">Tasks</h1>
+          <p className="text-sm text-slate-500">{total} task(s)</p>
+        </div>
+        {(user.role === "ADMIN" || user.role === "PROJECT_MANAGER") && (
+          <Button
+            asChild
+            className="bg-orange-500 hover:bg-orange-600 py-2 px-4"
+          >
+            <Link href="/tasks/new" className=" flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              New Task
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Suspense>
@@ -117,7 +132,9 @@ export default async function TasksPage({
             {tasks.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium text-[#0B192C]">
-                  {t.title}
+                  <Link href={`/tasks/${t.id}`} className="hover:underline">
+                    {t.title}
+                  </Link>
                 </TableCell>
                 <TableCell>{t.project.name}</TableCell>
                 <TableCell>{t.assignee?.name ?? "Unassigned"}</TableCell>

@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
 import { taskScope, getBlockedTaskIds } from "@/lib/task-access";
 import { statusSchema, commentSchema } from "@/lib/validations/task";
+import { redirect } from "next/navigation";
+import { taskSchema } from "@/lib/validations/task";
 
 export type TaskResult = { ok: boolean; error?: string };
 
@@ -156,4 +158,110 @@ export async function addDependency(
   });
   revalidatePath(`/tasks/${taskId}`);
   return { ok: true };
+}
+
+export type TaskFormState = {
+  error?: string;
+  fieldErrors?: Record<string, string[] | undefined>;
+};
+
+export async function createTask(
+  _prev: TaskFormState,
+  formData: FormData,
+): Promise<TaskFormState> {
+  const user = await requireRole("ADMIN", "PROJECT_MANAGER");
+  const parsed = taskSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success)
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+
+  const { projectId, assigneeId, contractorId, description, ...rest } =
+    parsed.data;
+
+  // PM can only add tasks to their own projects
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      ...(user.role === "PROJECT_MANAGER" ? { managerId: user.id } : {}),
+    },
+  });
+  if (!project) return { error: "Project not found or not allowed" };
+
+  if (assigneeId) {
+    const a = await prisma.user.findFirst({
+      where: { id: assigneeId, role: "SITE_ENGINEER", isActive: true },
+    });
+    if (!a) return { error: "Invalid assignee" };
+  }
+  if (contractorId) {
+    const c = await prisma.projectContractor.findUnique({
+      where: { projectId_contractorId: { projectId, contractorId } },
+    });
+    if (!c) return { error: "That contractor is not assigned to this project" };
+  }
+
+  const task = await prisma.task.create({
+    data: {
+      ...rest,
+      projectId,
+      description: description || null,
+      assigneeId: assigneeId || null,
+      contractorId: contractorId || null,
+    },
+  });
+  await prisma.taskHistory.create({
+    data: {
+      taskId: task.id,
+      userId: user.id,
+      action: "Task created",
+      toStatus: "TODO",
+    },
+  });
+
+  revalidatePath("/tasks");
+  redirect(`/tasks/${task.id}`);
+}
+
+export async function updateTask(
+  id: string,
+  _prev: TaskFormState,
+  formData: FormData,
+): Promise<TaskFormState> {
+  const user = await requireRole("ADMIN", "PROJECT_MANAGER");
+  const parsed = taskSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success)
+    return { fieldErrors: parsed.error.flatten().fieldErrors };
+
+  const existing = await prisma.task.findFirst({
+    where: { AND: [{ id }, await taskScope(user)] },
+  });
+  if (!existing) return { error: "Task not found or not allowed" };
+
+  const { projectId, assigneeId, contractorId, description, ...rest } =
+    parsed.data;
+  if (projectId !== existing.projectId) {
+    return { error: "A task cannot be moved to another project" };
+  }
+  if (contractorId) {
+    const c = await prisma.projectContractor.findUnique({
+      where: { projectId_contractorId: { projectId, contractorId } },
+    });
+    if (!c) return { error: "That contractor is not assigned to this project" };
+  }
+
+  await prisma.task.update({
+    where: { id },
+    data: {
+      ...rest,
+      description: description || null,
+      assigneeId: assigneeId || null,
+      contractorId: contractorId || null,
+    },
+  });
+  await prisma.taskHistory.create({
+    data: { taskId: id, userId: user.id, action: "Task details updated" },
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
+  redirect(`/tasks/${id}`);
 }
