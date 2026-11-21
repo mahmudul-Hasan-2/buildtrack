@@ -7,8 +7,8 @@ import {
   ProjectStatus,
   StockType,
 } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import { faker } from "@faker-js/faker";
+import { hashPassword } from "better-auth/crypto";
 
 const prisma = new PrismaClient();
 const PASSWORD = "Password123!";
@@ -34,15 +34,34 @@ async function main() {
   await prisma.projectContractor.deleteMany();
   await prisma.project.deleteMany();
   await prisma.contractor.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.account.deleteMany();
+  await prisma.verification.deleteMany();
   await prisma.user.deleteMany();
 
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const passwordHash = await hashPassword(PASSWORD);
 
   // ---------- Users (demo accounts for all 5 roles) ----------
-  const mk = (name: string, email: string, role: Role) =>
-    prisma.user.create({
-      data: { name, email, role, passwordHash, phone: faker.phone.number() },
+  const mk = async (name: string, email: string, role: Role) => {
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        role,
+        emailVerified: true,
+        phone: faker.phone.number(),
+      },
     });
+    await prisma.account.create({
+      data: {
+        accountId: user.id,
+        providerId: "credential",
+        userId: user.id,
+        password: passwordHash,
+      },
+    });
+    return user;
+  };
 
   const admin = await mk("Admin User", "admin@buildtrack.com", Role.ADMIN);
   const pm = await mk(

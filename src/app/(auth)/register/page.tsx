@@ -1,22 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Role } from "@prisma/client";
 import { HardHat, Loader2, AlertCircle, UserPlus } from "lucide-react";
-import { registerAction, type AuthActionState } from "@/actions/auth";
-import { ROLE_LABELS } from "@/lib/permissions";
+import { registerAction } from "@/actions/auth";
+import type { AuthActionState } from "@/types/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -31,7 +23,6 @@ const initialState: AuthActionState = {};
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<Role>(Role.SITE_ENGINEER);
   const [state, formAction, isPending] = useActionState(
     registerAction,
     initialState,
@@ -59,7 +50,7 @@ export default function RegisterPage() {
           Create your account
         </CardTitle>
         <CardDescription className="text-slate-500">
-          Set up your role-based access for BuildTrack
+          Register as a contractor to access BuildTrack
         </CardDescription>
       </CardHeader>
 
@@ -103,30 +94,6 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-slate-700 font-medium">
-              Project Role
-            </Label>
-            {/* Hidden input ensures FormData captures the Radix Select value */}
-            <input type="hidden" name="role" value={selectedRole} />
-            <Select
-              value={selectedRole}
-              onValueChange={(val) => setSelectedRole(val as Role)}
-              disabled={isPending}
-            >
-              <SelectTrigger className="w-full focus:ring-orange-500">
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(Role).map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="password" className="text-slate-700 font-medium">
               Password
             </Label>
@@ -142,6 +109,11 @@ export default function RegisterPage() {
             />
           </div>
 
+          <p className="text-xs text-slate-500">
+            Public sign-up creates a Contractor account. Other roles are
+            assigned by an Admin.
+          </p>
+
           <Button
             type="submit"
             disabled={isPending}
@@ -150,7 +122,7 @@ export default function RegisterPage() {
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Provisioning Workspace...
+                Creating Account...
               </>
             ) : (
               <>

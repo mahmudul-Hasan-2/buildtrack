@@ -4,27 +4,30 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "BuildTrack | Construction Project Intelligence",
   description:
-    "Enterprise platform for site engineering, project management, and cost control.",
+    "Enterprise construction project management and intelligence platform.",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.className} antialiased min-h-screen bg-slate-50 text-slate-900`}
+        className={`${inter.variable} font-sans antialiased selection:bg-orange-500 selection:text-white`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

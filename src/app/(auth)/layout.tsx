@@ -1,15 +1,15 @@
 import { HardHat, ShieldCheck, BarChart3, Layers } from "lucide-react";
 
-export default function AuthGroupLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-slate-50">
-      {/* Left Brand Showcase Panel */}
+    <div className="min-h-screen grid lg:grid-cols-2 bg-slate-50 dark:bg-slate-950">
+      {/* Left Brand & Telemetry Panel */}
       <div className="hidden lg:flex flex-col justify-between bg-[#0B192C] text-white p-12 relative overflow-hidden">
-        {/* Subtle Engineering Grid Pattern */}
+        {/* Blueprint Grid Overlay */}
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
@@ -34,7 +34,7 @@ export default function AuthGroupLayout({
           </div>
         </div>
 
-        {/* Value Proposition */}
+        {/* Center Value Prop */}
         <div className="relative z-10 space-y-6 max-w-md">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-medium">
             <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
@@ -64,7 +64,7 @@ export default function AuthGroupLayout({
           </div>
         </div>
 
-        {/* Footer info */}
+        {/* Footer */}
         <div className="relative z-10 text-xs text-slate-500 flex justify-between">
           <span>© {new Date().getFullYear()} BuildTrack Systems Inc.</span>
           <span>ISO 19650 Compliant</span>

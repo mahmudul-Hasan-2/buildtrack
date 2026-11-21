@@ -1,95 +1,87 @@
 "use server";
 
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { Role } from "@prisma/client";
-import { auth } from "@/lib/auth";
-import { ROLE_DASHBOARD_MAP } from "@/lib/permissions";
+import { z } from "zod";
 import { APIError } from "better-auth/api";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import type { AuthActionState } from "@/types/auth";
 
-export type AuthActionState = {
-  error?: string;
-  redirectTo?: string;
-};
+const loginSchema = z.object({
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Name is too short"),
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 export async function loginAction(
-  _prevState: AuthActionState,
+  _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  if (!email || !password) {
-    return { error: "Please enter both email and password." };
+  const email = parsed.data.email.toLowerCase();
+
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { isActive: true },
+  });
+  if (existing && !existing.isActive) {
+    return { error: "This account has been deactivated" };
   }
 
   try {
-    const response = await auth.api.signInEmail({
-      body: { email, password },
-      headers: await headers(),
+    await auth.api.signInEmail({
+      body: { email, password: parsed.data.password },
     });
-
-    const userRole = (response.user.role as Role) || Role.SITE_ENGINEER;
-    const redirectTo = ROLE_DASHBOARD_MAP[userRole] || "/dashboard/engineer";
-
-    return { redirectTo };
-  } catch (err) {
-    if (err instanceof APIError) {
-      return { error: err.message || "Invalid email or password." };
-    }
-    return { error: "An unexpected error occurred during sign in." };
+    return { redirectTo: "/dashboard" };
+  } catch (e) {
+    if (e instanceof APIError) return { error: "Invalid email or password" };
+    return { error: "Something went wrong. Please try again." };
   }
 }
 
 export async function registerAction(
-  _prevState: AuthActionState,
+  _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const role = (formData.get("role") as Role) || Role.SITE_ENGINEER;
+  const parsed = registerSchema.safeParse({
+    name: formData.get("name"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  if (!name || !email || !password) {
-    return { error: "All fields are required." };
-  }
+  const { name, password } = parsed.data;
+  const email = parsed.data.email.toLowerCase();
 
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters long." };
-  }
-
-  // Prevent unauthorized self-registration as ADMIN if desired (optional guard)
-  if (!Object.values(Role).includes(role)) {
-    return { error: "Invalid role selected." };
-  }
+  const exists =
+    (await prisma.user.findUnique({ where: { email } })) ||
+    (await prisma.contractor.findUnique({ where: { email } }));
+  if (exists) return { error: "This email is already registered" };
 
   try {
-    const response = await auth.api.signUpEmail({
-      body: {
-        name,
+    // Role is NEVER read from the form. Public sign-up is always CONTRACTOR.
+    const res = await auth.api.signUpEmail({ body: { name, email, password } });
+
+    await prisma.contractor.create({
+      data: {
+        userId: res.user.id,
+        companyName: `${name} (Independent)`,
+        contactName: name,
         email,
-        password,
-        role,
+        phone: "-",
       },
-      headers: await headers(),
     });
-
-    const assignedRole = (response.user.role as Role) || role;
-    const redirectTo = ROLE_DASHBOARD_MAP[assignedRole];
-
-    return { redirectTo };
-  } catch (err) {
-    if (err instanceof APIError) {
-      return { error: err.message || "Failed to create account." };
-    }
-    return { error: "An unexpected error occurred during registration." };
+    return { redirectTo: "/dashboard" };
+  } catch {
+    return { error: "Could not create the account. Please try again." };
   }
 }
-
-export async function logoutAction() {
-  await auth.api.signOut({
-    headers: await headers(),
-  });
-  redirect("/login");
-}
- 

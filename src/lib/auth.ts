@@ -1,39 +1,32 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
-import { PrismaClient, Role } from "@prisma/client";
-
-// Prevent multiple Prisma instances in development
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-export const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import { prisma } from "@/lib/prisma";
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "postgresql",
-  }),
-  emailAndPassword: {
-    enabled: true,
-    minPasswordLength: 8,
-  },
+  database: prismaAdapter(prisma, { provider: "postgresql" }),
+  emailAndPassword: { enabled: true, minPasswordLength: 8 },
   user: {
     additionalFields: {
+      // input: false => a client can NEVER choose its own role
       role: {
         type: "string",
         required: false,
-        defaultValue: Role.SITE_ENGINEER,
-        input: true, // Allows passing role during registration
+        defaultValue: "CONTRACTOR",
+        input: false,
+      },
+      phone: { type: "string", required: false, input: false },
+      isActive: {
+        type: "boolean",
+        required: false,
+        defaultValue: true,
+        input: false,
       },
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // 1 day
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
   },
-  plugins: [
-    nextCookies(), // Automatically sets cookies when using auth.api in Server Actions
-  ],
+  plugins: [nextCookies()], // must be the last plugin
 });
-
-export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.Session.user;

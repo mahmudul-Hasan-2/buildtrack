@@ -1,21 +1,21 @@
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/permissions";
+import { requireUser } from "@/lib/permissions";
+import { Topbar } from "@/components/shared/topbar";
+import { SidebarNav } from "@/components/dashboard/dashboard-nav";
 
-export default async function DashboardGroupLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const user = await requireUser();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Future global dashboard sidebar/header shell can be integrated here */}
-      <main className="flex-1 flex flex-col">{children}</main>
+    <div className="flex min-h-screen bg-slate-50">
+      <SidebarNav role={user.role} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar user={user} />
+        <main className="flex-1 p-4 sm:p-6">{children}</main>
+      </div>
     </div>
   );
 }
