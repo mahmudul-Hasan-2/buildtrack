@@ -13,7 +13,7 @@ Next.js 16 (App Router) + TypeScript + Prisma + PostgreSQL (Supabase) + Better A
 - Reports and charts, notifications, activity log, profile settings, dark mode
 
 ## Live Demo
-(https://buildtrack-teal.vercel.app)[https://buildtrack-teal.vercel.app]
+https://buildtrack-teal.vercel.app/
 
 Demo credentials are listed below.
 
