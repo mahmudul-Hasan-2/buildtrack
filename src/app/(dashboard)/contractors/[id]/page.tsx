@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function ContractorDetailPage({
+async function ContractorDetailContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -68,7 +69,7 @@ export default async function ContractorDetailPage({
           <Badge variant={c.status === "ACTIVE" ? "secondary" : "destructive"}>
             {c.status}
           </Badge>
-          <Button asChild variant="outline" size="sm">
+          <Button variant="outline" size="sm" asChild>
             <Link href={`/contractors/${id}/edit`}>Edit</Link>
           </Button>
         </div>
@@ -182,5 +183,21 @@ export default async function ContractorDetailPage({
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ContractorDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-96 w-full rounded-lg border bg-muted/25 animate-pulse" />
+      }
+    >
+      <ContractorDetailContent params={params} />
+    </Suspense>
   );
 }

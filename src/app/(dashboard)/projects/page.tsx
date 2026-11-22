@@ -116,7 +116,7 @@ export default async function ProjectsPage({
                   <p className="text-slate-500">No projects found.</p>
                   {canCreate && (
                     <Button
-                      asChild
+                      
                       size="sm"
                       className="mt-3 bg-orange-500 hover:bg-orange-600"
                     >

@@ -50,7 +50,7 @@ export default async function NotificationsPage() {
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {n.link && (
-                  <Button asChild size="sm" variant="ghost">
+                  <Button size="sm" variant="ghost">
                     <Link href={n.link}>Open</Link>
                   </Button>
                 )}

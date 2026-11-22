@@ -92,7 +92,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
       {/* Mobile Menu & Brand */}
       <div className="flex items-center gap-4">
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
+          <SheetTrigger>
             <Button
               variant="ghost"
               size="icon"

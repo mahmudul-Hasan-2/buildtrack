@@ -150,7 +150,7 @@ export function SidebarNav({ role }: { role: Role }) {
 export function MobileNav({ role }: { role: Role }) {
   return (
     <Sheet>
-      <SheetTrigger asChild>
+      <SheetTrigger>
         <Button
           variant="ghost"
           size="icon"

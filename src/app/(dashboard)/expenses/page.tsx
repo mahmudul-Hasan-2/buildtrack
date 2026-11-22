@@ -98,7 +98,7 @@ export default async function ExpensesPage({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <CategoryForm />
-          <Button asChild className="bg-orange-500 hover:bg-orange-600">
+          <Button className="bg-orange-500 hover:bg-orange-600">
             <Link href="/expenses/new">
               <Plus className="mr-2 h-4 w-4" />
               New Expense

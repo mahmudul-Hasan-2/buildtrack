@@ -67,7 +67,7 @@ export default async function ProjectDetailPage({
         <div className="flex items-center gap-2">
           <Badge>{p.status.replace("_", " ")}</Badge>
           {canEdit && (
-            <Button asChild variant="outline" size="sm">
+            <Button variant="outline" size="sm">
               <Link href={`/projects/${id}/edit`}>Edit</Link>
             </Button>
           )}
@@ -121,7 +121,7 @@ export default async function ProjectDetailPage({
             <p className="text-xl font-bold">{p._count.tasks}</p>
             <p className="text-sm text-slate-500">Manager: {p.manager.name}</p>
             {canEdit && (
-              <Button asChild size="sm" variant="outline" className="mt-2">
+              <Button size="sm" variant="outline" className="mt-2">
                 <Link href={`/tasks/new?projectId=${id}`}>Add task</Link>
               </Button>
             )}

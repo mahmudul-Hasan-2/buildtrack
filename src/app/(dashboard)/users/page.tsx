@@ -77,7 +77,7 @@ export default async function UsersPage({
           <h1 className="text-2xl font-bold text-[#0B192C]">Users</h1>
           <p className="text-sm text-slate-500">{total} user(s)</p>
         </div>
-        <Button asChild className="bg-orange-500 hover:bg-orange-600">
+        <Button className="bg-orange-500 hover:bg-orange-600">
           <Link href="/users/new">
             <Plus className="mr-2 h-4 w-4" />
             New User

@@ -79,16 +79,12 @@ export default async function TaskDetailPage({
           {isOverdue(t) && <Badge variant="destructive">Overdue</Badge>}
           {blocked && <Badge className="bg-amber-500">Blocked</Badge>}
           {canReport && t.status !== "COMPLETED" && (
-            <Button
-              asChild
-              size="sm"
-              className="bg-orange-500 hover:bg-orange-600"
-            >
+            <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
               <Link href={`/progress/new?taskId=${id}`}>Report progress</Link>
             </Button>
           )}
           {isManager && (
-            <Button asChild variant="outline" size="sm">
+            <Button variant="outline" size="sm">
               <Link href={`/tasks/${id}/edit`}>Edit</Link>
             </Button>
           )}

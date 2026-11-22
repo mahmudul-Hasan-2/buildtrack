@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { Suspense } from "react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
@@ -11,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const PAGE_SIZE = 6;
 
-export default async function ProgressPage({
+async function ProgressContent({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
@@ -22,7 +23,9 @@ export default async function ProgressPage({
     "SITE_ENGINEER",
     "CONTRACTOR",
   );
-  const page = Math.max(1, Number((await searchParams).page) || 1);
+
+  const resolvedSearchParams = await searchParams;
+  const page = Math.max(1, Number(resolvedSearchParams?.page) || 1);
 
   let where: Prisma.ProgressReportWhereInput = {};
   if (user.role === "PROJECT_MANAGER")
@@ -60,7 +63,7 @@ export default async function ProgressPage({
           <p className="text-sm text-slate-500">{total} report(s)</p>
         </div>
         {canSubmit && (
-          <Button asChild className="bg-orange-500 hover:bg-orange-600">
+          <Button className="bg-orange-500 hover:bg-orange-600" asChild>
             <Link href="/progress/new">
               <Plus className="mr-2 h-4 w-4" />
               New Report
@@ -117,5 +120,21 @@ export default async function ProgressPage({
         params={{}}
       />
     </div>
+  );
+}
+
+export default async function ProgressPage(props: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const searchParams = props.searchParams;
+
+  return (
+    <Suspense
+      fallback={
+        <div className="h-96 w-full rounded-lg border bg-muted/25 animate-pulse" />
+      }
+    >
+      <ProgressContent searchParams={searchParams} />
+    </Suspense>
   );
 }

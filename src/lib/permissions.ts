@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
@@ -12,9 +13,10 @@ export type SessionUser = {
   isActive: boolean;
 };
 
-export async function getSession() {
-  return auth.api.getSession({ headers: await headers() });
-}
+// cache(): one DB lookup per request, even if called from layout + page + topbar
+export const getSession = cache(async () =>
+  auth.api.getSession({ headers: await headers() }),
+);
 
 export async function requireUser(): Promise<SessionUser> {
   const session = await getSession();
@@ -24,7 +26,6 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-// Use at the top of every protected page and server action
 export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   const user = await requireUser();
   if (!roles.includes(user.role)) redirect("/dashboard");

@@ -28,7 +28,7 @@ export function Pagination({
       </p>
       <div className="flex gap-2">
         {page > 1 ? (
-          <Button asChild variant="outline" size="sm">
+          <Button variant="outline" size="sm">
             <Link href={href(page - 1)}>Previous</Link>
           </Button>
         ) : (
@@ -37,7 +37,7 @@ export function Pagination({
           </Button>
         )}
         {page < totalPages ? (
-          <Button asChild variant="outline" size="sm">
+          <Button variant="outline" size="sm">
             <Link href={href(page + 1)}>Next</Link>
           </Button>
         ) : (

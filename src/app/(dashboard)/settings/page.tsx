@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/permissions";
 import { ROLE_LABELS } from "@/lib/roles";
@@ -8,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default async function SettingsPage() {
+async function SettingsContent() {
   const user = await requireUser();
   const full = await prisma.user.findUnique({
     where: { id: user.id },
@@ -42,5 +43,17 @@ export default async function SettingsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-96 w-full rounded-lg border bg-muted/25 animate-pulse" />
+      }
+    >
+      <SettingsContent />
+    </Suspense>
   );
 }

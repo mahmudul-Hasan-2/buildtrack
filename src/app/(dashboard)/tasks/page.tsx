@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@base-ui/react";
+import { Button } from "@/components/ui/button"; // <-- Fixed import from local ui component
 import { Plus } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -88,20 +88,22 @@ export default async function TasksPage({
           <h1 className="text-2xl font-bold text-[#0B192C]">Tasks</h1>
           <p className="text-sm text-slate-500">{total} task(s)</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/tasks/board">Board view</Link>
-        </Button>
-        {(user.role === "ADMIN" || user.role === "PROJECT_MANAGER") && (
-          <Button
-            asChild
-            className="bg-orange-500 hover:bg-orange-600 py-2 px-4"
-          >
-            <Link href="/tasks/new" className=" flex items-center">
-              <Plus className="mr-2 h-4 w-4" />
-              New Task
-            </Link>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/tasks/board">Board view</Link>
           </Button>
-        )}
+          {(user.role === "ADMIN" || user.role === "PROJECT_MANAGER") && (
+            <Button
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+              asChild
+            >
+              <Link href="/tasks/new" className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                New Task
+              </Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <Suspense>

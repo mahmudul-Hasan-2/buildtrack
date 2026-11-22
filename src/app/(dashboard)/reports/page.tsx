@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
 import { ReportsCharts } from "@/components/reports/reports-charts";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const short = (s: string) => (s.length > 14 ? s.slice(0, 13) + "…" : s);
 
-export default async function ReportsPage() {
+async function ReportsContent() {
   const user = await requireRole("ADMIN", "PROJECT_MANAGER", "FINANCE_MANAGER");
   const projectWhere =
     user.role === "PROJECT_MANAGER" ? { managerId: user.id } : {};
@@ -128,7 +129,7 @@ export default async function ReportsPage() {
             All figures are calculated on the server
           </p>
         </div>
-        <Button asChild variant="outline">
+        <Button variant="outline" asChild>
           <a href="/reports/export">Export expenses (CSV)</a>
         </Button>
       </div>
@@ -156,5 +157,17 @@ export default async function ReportsPage() {
         showTasks={showTasks}
       />
     </div>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-96 w-full rounded-lg border bg-muted/25 animate-pulse" />
+      }
+    >
+      <ReportsContent />
+    </Suspense>
   );
 }

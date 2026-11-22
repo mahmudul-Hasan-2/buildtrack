@@ -45,7 +45,7 @@ export default async function BoardPage() {
             Drag a card to change its status
           </p>
         </div>
-        <Button asChild variant="outline">
+        <Button variant="outline">
           <Link href="/tasks">List view</Link>
         </Button>
       </div>

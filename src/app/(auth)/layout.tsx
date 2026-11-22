@@ -66,7 +66,7 @@ export default function AuthLayout({
 
         {/* Footer */}
         <div className="relative z-10 text-xs text-slate-500 flex justify-between">
-          <span>© {new Date().getFullYear()} BuildTrack Systems Inc.</span>
+          <span>© 2026 BuildTrack Systems Inc.</span>
           <span>ISO 19650 Compliant</span>
         </div>
       </div>

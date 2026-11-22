@@ -84,12 +84,12 @@ export default async function MaterialsPage({
         </div>
         <div className="flex gap-2">
           {user.role !== "SITE_ENGINEER" && (
-            <Button asChild variant="outline">
+            <Button variant="outline">
               <Link href="/materials/requests">Requests</Link>
             </Button>
           )}
           {isManager && (
-            <Button asChild className="bg-orange-500 hover:bg-orange-600">
+            <Button className="bg-orange-500 hover:bg-orange-600">
               <Link href="/materials/new">
                 <Plus className="mr-2 h-4 w-4" />
                 New Material

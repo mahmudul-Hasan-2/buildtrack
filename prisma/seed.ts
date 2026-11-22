@@ -6,6 +6,12 @@ import {
   Priority,
   ProjectStatus,
   StockType,
+  type Contractor,
+  type ExpenseCategory,
+  type MaterialCategory,
+  type Material,
+  type Project,
+  type Task,
 } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import { hashPassword } from "better-auth/crypto";
@@ -108,7 +114,7 @@ async function main() {
   }
 
   // ---------- Contractors (20) ----------
-  const contractors = [];
+  const contractors: Contractor[] = [];
   for (let i = 0; i < 20; i++) {
     contractors.push(
       await prisma.contractor.create({
@@ -141,7 +147,7 @@ async function main() {
     "Utilities",
     "Miscellaneous",
   ];
-  const expCats = [];
+  const expCats: ExpenseCategory[] = [];
   for (const name of catNames)
     expCats.push(await prisma.expenseCategory.create({ data: { name } }));
 
@@ -154,7 +160,7 @@ async function main() {
     "Plumbing",
     "Finishing",
   ];
-  const matCats = [];
+  const matCats: MaterialCategory[] = [];
   for (const name of matCatNames)
     matCats.push(await prisma.materialCategory.create({ data: { name } }));
 
@@ -191,7 +197,7 @@ async function main() {
     "LED Light Fixture",
   ];
   const units = ["bag", "kg", "pcs", "m", "ton", "sheet"];
-  const materials = [];
+  const materials: Material[] = [];
   for (let i = 0; i < materialNames.length; i++) {
     materials.push(
       await prisma.material.create({
@@ -267,7 +273,7 @@ async function main() {
     "Rangpur",
   ];
 
-  const projects = [];
+  const projects: Project[] = [];
   const allTasks: { id: string; projectId: string }[] = [];
 
   for (let p = 0; p < 10; p++) {
@@ -292,18 +298,15 @@ async function main() {
             : pStatus === "PLANNING"
               ? faker.number.int({ min: 0, max: 10 })
               : faker.number.int({ min: 10, max: 90 }),
-        // round-robin: pm@buildtrack.com always gets projects 0, 3, 6, 9
         managerId: extraPMs[p % extraPMs.length].id,
       },
     });
     projects.push(project);
 
-    // assign 3-5 contractors to the project
     const assigned = faker.helpers.arrayElements(
       contractors,
       faker.number.int({ min: 3, max: 5 }),
     );
-    // make sure the demo contractor is assigned to the first 3 projects
     if (p < 3 && !assigned.find((c) => c.id === contractors[0].id))
       assigned.push(contractors[0]);
     await prisma.projectContractor.createMany({
@@ -313,7 +316,6 @@ async function main() {
       })),
     });
 
-    // milestones
     await prisma.milestone.createMany({
       data: [
         "Foundation Complete",
@@ -330,10 +332,8 @@ async function main() {
       })),
     });
 
-    // 10 tasks per project
-    const createdTasks = [];
+    const createdTasks: Task[] = [];
     for (let t = 0; t < 10; t++) {
-      // tasks of a COMPLETED project are all completed
       const status: TaskStatus =
         pStatus === "COMPLETED"
           ? "COMPLETED"
@@ -365,7 +365,6 @@ async function main() {
       createdTasks.push(task);
       allTasks.push({ id: task.id, projectId: project.id });
 
-      // history: created, then the path to the current status
       await prisma.taskHistory.create({
         data: {
           taskId: task.id,
@@ -389,7 +388,6 @@ async function main() {
         });
       }
 
-      // dependency: depends on the previous task (never on itself)
       if (t > 0 && Math.random() < 0.4) {
         await prisma.taskDependency.create({
           data: { taskId: task.id, dependsOnTaskId: createdTasks[t - 1].id },
@@ -397,7 +395,6 @@ async function main() {
       }
     }
 
-    // progress reports
     for (let r = 0; r < 3; r++) {
       await prisma.progressReport.create({
         data: {

@@ -42,7 +42,7 @@ export function UserNav({ user }: UserNavProps) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button
           variant="ghost"
           className="relative h-10 w-10 rounded-full focus-visible:ring-orange-500"
@@ -55,7 +55,7 @@ export function UserNav({ user }: UserNavProps) {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-semibold leading-none text-slate-900">
@@ -70,7 +70,7 @@ export function UserNav({ user }: UserNavProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem >
             <Link href="/settings" className="flex cursor-pointer items-center">
               <User className="mr-2 h-4 w-4 text-slate-500" />
               <span>Profile Settings</span>
