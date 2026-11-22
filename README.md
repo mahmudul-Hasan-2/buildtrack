@@ -37,6 +37,7 @@ npm run dev
 | BETTER_AUTH_URL           | App base URL                                       |
 | SUPABASE_URL              | Supabase project URL                               |
 | SUPABASE_SERVICE_ROLE_KEY | Server-only key (never expose)                     |
+| NEXT_PUBLIC_APP_URL | Base URL of your application |
 
 Create a public Storage bucket named `progress-photos`.
 
