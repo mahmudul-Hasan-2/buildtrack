@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
 import { taskScope, getBlockedTaskIds, isOverdue } from "@/lib/task-access";
 import { StatusChanger, CommentForm } from "@/components/tasks/task-actions";
+import { DependencyManager } from "@/components/tasks/dependency-manager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -47,6 +48,18 @@ export default async function TaskDetailPage({
 
   const blocked = (await getBlockedTaskIds([id])).has(id);
   const isManager = user.role === "ADMIN" || user.role === "PROJECT_MANAGER";
+  const canReport = user.role === "SITE_ENGINEER" || user.role === "CONTRACTOR";
+
+  const options = isManager
+    ? await prisma.task.findMany({
+        where: {
+          projectId: t.project.id,
+          id: { notIn: [id, ...t.dependsOn.map((d) => d.dependsOnTaskId)] },
+        },
+        select: { id: true, title: true },
+        orderBy: { title: "asc" },
+      })
+    : [];
 
   return (
     <div className="space-y-6">
@@ -65,6 +78,15 @@ export default async function TaskDetailPage({
         <div className="flex items-center gap-2">
           {isOverdue(t) && <Badge variant="destructive">Overdue</Badge>}
           {blocked && <Badge className="bg-amber-500">Blocked</Badge>}
+          {canReport && t.status !== "COMPLETED" && (
+            <Button
+              asChild
+              size="sm"
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              <Link href={`/progress/new?taskId=${id}`}>Report progress</Link>
+            </Button>
+          )}
           {isManager && (
             <Button asChild variant="outline" size="sm">
               <Link href={`/tasks/${id}/edit`}>Edit</Link>
@@ -122,22 +144,15 @@ export default async function TaskDetailPage({
             <p>Engineer: {t.assignee?.name ?? "Unassigned"}</p>
             <p>Contractor: {t.contractor?.companyName ?? "None"}</p>
             <p className="pt-2 font-medium">Depends on:</p>
-            {t.dependsOn.length === 0 && (
-              <p className="text-slate-500">No dependencies</p>
-            )}
-            {t.dependsOn.map((d) => (
-              <p key={d.dependsOnTaskId}>
-                <Link
-                  href={`/tasks/${d.dependsOnTask.id}`}
-                  className="hover:underline"
-                >
-                  {d.dependsOnTask.title}
-                </Link>{" "}
-                <Badge variant="secondary">
-                  {d.dependsOnTask.status.replace("_", " ")}
-                </Badge>
-              </p>
-            ))}
+            <DependencyManager
+              taskId={id}
+              canEdit={isManager}
+              current={t.dependsOn.map((d) => ({
+                id: d.dependsOnTask.id,
+                title: d.dependsOnTask.title,
+              }))}
+              options={options}
+            />
           </CardContent>
         </Card>
 

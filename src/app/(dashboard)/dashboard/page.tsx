@@ -1,11 +1,51 @@
+import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/permissions";
 import { ROLE_LABELS } from "@/lib/roles";
 import { getDashboardStats } from "@/lib/dashboard-stats";
+import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const label = (s: string) => s.replace("_", " ");
 
 export default async function DashboardPage() {
   const user = await requireUser();
   const stats = await getDashboardStats(user);
+
+  const showCharts = user.role === "ADMIN" || user.role === "PROJECT_MANAGER";
+  let taskData: { name: string; value: number }[] = [];
+  let projectData: { name: string; value: number }[] = [];
+
+  if (showCharts) {
+    // A PM only sees data of their own projects
+    const projectWhere =
+      user.role === "PROJECT_MANAGER" ? { managerId: user.id } : {};
+    const [tg, pg] = await Promise.all([
+      prisma.task.groupBy({
+        by: ["status"],
+        where: { project: projectWhere },
+        _count: { _all: true },
+      }),
+      prisma.project.groupBy({
+        by: ["status"],
+        where: projectWhere,
+        _count: { _all: true },
+      }),
+    ]);
+    taskData = ["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"].map((s) => ({
+      name: label(s),
+      value: tg.find((g) => g.status === s)?._count._all ?? 0,
+    }));
+    projectData = [
+      "PLANNING",
+      "ACTIVE",
+      "ON_HOLD",
+      "COMPLETED",
+      "CANCELLED",
+    ].map((s) => ({
+      name: label(s),
+      value: pg.find((g) => g.status === s)?._count._all ?? 0,
+    }));
+  }
 
   return (
     <div className="space-y-6">
@@ -35,6 +75,10 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {showCharts && (
+        <DashboardCharts tasks={taskData} projects={projectData} />
+      )}
     </div>
   );
 }

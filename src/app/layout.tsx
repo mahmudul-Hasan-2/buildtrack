@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { ThemeProvider } from "@/components/shared/theme-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,12 +25,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased selection:bg-orange-500 selection:text-white`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider>
           {children}
           <Toaster richColors position="top-right" />
         </ThemeProvider>

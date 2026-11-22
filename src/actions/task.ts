@@ -265,3 +265,20 @@ export async function updateTask(
   revalidatePath(`/tasks/${id}`);
   redirect(`/tasks/${id}`);
 }
+
+export async function removeDependency(taskId: string, dependsOnTaskId: string): Promise<TaskResult> {
+  const user = await requireRole("ADMIN", "PROJECT_MANAGER");
+
+  const task = await prisma.task.findFirst({
+    where: { AND: [{ id: taskId }, await taskScope(user)] },
+    select: { id: true },
+  });
+  if (!task) return { ok: false, error: "Task not found or not allowed" };
+
+  await prisma.taskDependency.deleteMany({ where: { taskId, dependsOnTaskId } });
+  await prisma.taskHistory.create({
+    data: { taskId, userId: user.id, action: "Dependency removed" },
+  });
+  revalidatePath(`/tasks/${taskId}`);
+  return { ok: true };
+}

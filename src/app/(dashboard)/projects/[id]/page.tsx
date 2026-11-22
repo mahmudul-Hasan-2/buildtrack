@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/permissions";
 import { projectScope } from "@/lib/project-access";
 import { DeleteProjectButton } from "@/components/projects/delete-project-button";
+import { ContractorManager } from "@/components/projects/contractor-manager";
+import { MilestoneManager } from "@/components/projects/milestone-manager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -22,7 +24,7 @@ export default async function ProjectDetailPage({
   );
   const { id } = await params;
 
-  // Scope check: a user can only open projects they are allowed to see
+  // A user can only open projects inside their scope
   const p = await prisma.project.findFirst({
     where: { AND: [{ id }, await projectScope(user)] },
     include: {
@@ -45,6 +47,15 @@ export default async function ProjectDetailPage({
   const canEdit =
     user.role === "ADMIN" ||
     (user.role === "PROJECT_MANAGER" && p.managerId === user.id);
+
+  const assignedIds = p.contractors.map((c) => c.contractorId);
+  const available = canEdit
+    ? await prisma.contractor.findMany({
+        where: { status: "ACTIVE", id: { notIn: assignedIds } },
+        select: { id: true, companyName: true },
+        orderBy: { companyName: "asc" },
+      })
+    : [];
 
   return (
     <div className="space-y-6">
@@ -76,6 +87,7 @@ export default async function ProjectDetailPage({
             <p className="mt-2 text-xl font-bold">{p.progress}%</p>
           </CardContent>
         </Card>
+
         {user.role !== "CONTRACTOR" && (
           <Card>
             <CardHeader>
@@ -100,6 +112,7 @@ export default async function ProjectDetailPage({
             </CardContent>
           </Card>
         )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-sm text-slate-500">Tasks</CardTitle>
@@ -107,6 +120,11 @@ export default async function ProjectDetailPage({
           <CardContent>
             <p className="text-xl font-bold">{p._count.tasks}</p>
             <p className="text-sm text-slate-500">Manager: {p.manager.name}</p>
+            {canEdit && (
+              <Button asChild size="sm" variant="outline" className="mt-2">
+                <Link href={`/tasks/new?projectId=${id}`}>Add task</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -116,28 +134,45 @@ export default async function ProjectDetailPage({
           <CardHeader>
             <CardTitle>Milestones</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {p.milestones.map((m) => (
-              <div key={m.id} className="flex justify-between">
-                <span>{m.title}</span>
-                <span
-                  className={m.completed ? "text-green-600" : "text-slate-500"}
-                >
-                  {m.completed ? "Done" : m.dueDate.toLocaleDateString()}
-                </span>
-              </div>
-            ))}
+          <CardContent>
+            <MilestoneManager
+              projectId={id}
+              canEdit={canEdit}
+              milestones={p.milestones.map((m) => ({
+                id: m.id,
+                title: m.title,
+                dueDate: m.dueDate.toISOString(),
+                completed: m.completed,
+              }))}
+            />
           </CardContent>
         </Card>
+
         {user.role !== "CONTRACTOR" && (
           <Card>
             <CardHeader>
               <CardTitle>Contractors</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-1 text-sm">
-              {p.contractors.map((c) => (
-                <p key={c.contractorId}>{c.contractor.companyName}</p>
-              ))}
+            <CardContent className="text-sm">
+              {canEdit ? (
+                <ContractorManager
+                  projectId={id}
+                  assigned={p.contractors.map((c) => ({
+                    id: c.contractorId,
+                    name: c.contractor.companyName,
+                  }))}
+                  available={available.map((c) => ({
+                    id: c.id,
+                    name: c.companyName,
+                  }))}
+                />
+              ) : (
+                <div className="space-y-1">
+                  {p.contractors.map((c) => (
+                    <p key={c.contractorId}>{c.contractor.companyName}</p>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
