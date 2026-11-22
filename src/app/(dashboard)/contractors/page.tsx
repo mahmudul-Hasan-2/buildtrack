@@ -67,7 +67,7 @@ export default async function ContractorsPage({
           <p className="text-sm text-slate-500">{total} contractor(s)</p>
         </div>
         <Button className="bg-orange-500 hover:bg-orange-600">
-          <Link href="/contractors/new">
+          <Link href="/contractors/new" className="flex items-center">
             <Plus className="mr-2 h-4 w-4" />
             New Contractor
           </Link>
