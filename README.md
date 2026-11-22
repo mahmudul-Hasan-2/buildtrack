@@ -12,6 +12,11 @@ Next.js 16 (App Router) + TypeScript + Prisma + PostgreSQL (Supabase) + Better A
 - Progress reports with photo upload (Supabase Storage)
 - Reports and charts, notifications, activity log, profile settings, dark mode
 
+## Live Demo
+(https://buildtrack-teal.vercel.app)[https://buildtrack-teal.vercel.app]
+
+Demo credentials are listed below.
+
 ## Setup
 
 ```bash
