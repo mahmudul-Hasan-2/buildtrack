@@ -22,6 +22,3 @@ erDiagram
   User ||--o{ ActivityLog : performs
   User ||--o{ Session : has
   User ||--o{ Account : has
-```
-
-Key rules: unique `User.email`, `Material.sku`; composite keys on `ProjectContractor` and `TaskDependency`; indexes on `Task(projectId,status)`, `Task(deadline)`, `Expense(projectId)`, `Expense(date)`.
